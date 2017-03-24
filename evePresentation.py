@@ -8,12 +8,13 @@ from pptx.dml.color import RGBColor
 
 class Presentation:
 
-    def __init__(self, src_prs_path):
+    def __init__(self, src_prs_path: str):
         print("[ INFO    ] Loading presentation teplate: {}".format(src_prs_path))
         self.prs = pptx.Presentation(src_prs_path)
+        self.slides = []
         self.variants = []
 
-    def add_variants(self, variants):
+    def add_variants(self, variants: list):
         if len(variants) not in range(1, 4):
             raise Exception("Only 1 or 3 variants possible for now...\n")
 
@@ -34,7 +35,7 @@ class Presentation:
 
         print("[ INFO    ] Presentation saved to: {}".format(output_path))
 
-    def output_placeholders(self, output_pres_path):
+    def output_placeholders_pptx(self, output_pres_path: str):
         for master_slide in self.prs.slide_masters:
             for lay_id, layout in enumerate(master_slide.slide_layouts):
                 slide = self.prs.slides.add_slide(layout)
@@ -60,18 +61,20 @@ class Presentation:
 
         self.prs.save(output_pres_path)
 
-    def add_slide(self, title, layout_num):
+    def add_slide(self, title: str, layout_num: int):
         slide_layout = self.prs.slide_masters[1].slide_layouts[layout_num]
         slide = self.prs.slides.add_slide(slide_layout)
+        self.slides.append(slide)  # presentation knows about slide
         slide.shapes.title.text = title
+        # Return pptx.Presentation: obj, pptx.slide: obj, layout_num: int
         return Slide(self, slide, layout_num)
 
 
 class Slide():
 
     def __init__(self, pres, slide, layout_num):
-        self.slide = slide
-        self.pres = pres
+        self.slide = slide  # slide knows about pptx.slide object
+        self.pres = pres  # slide knows about presentation
         self.variants = pres.variants
         self.layout_num = layout_num
         self.slide_num = pres.get_num_of_slides()
@@ -83,7 +86,7 @@ class Slide():
         for idx, variant in enumerate(self.variants):
             variant_num = variant.split('-')[0]
 
-            # TEXT
+            # TEXT (slide title)
             self.slide.placeholders[17 + idx].text = variant_num
 
             # IMAGES
@@ -97,7 +100,7 @@ class Slide():
                 self.slide.placeholders[11 + idx].insert_picture(img1_path)
                 self.slide.placeholders[14 + idx].insert_picture(img2_path)
 
-    def add_fringebar(self, fringebar):
+    def add_fringebar(self, fringebar: str):
         PROJECT_PATH = os.path.realpath(os.path.curdir)
 
         if self.layout_num not in [1, 2]:
