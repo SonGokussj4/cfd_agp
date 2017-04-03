@@ -48,6 +48,8 @@ class Presentation:
         self.slides = []
         self.variants = []
         self.conf = None
+        self.one_image_slides = [2, 3]
+        self.two_images_slides = [4, 5, 6]
 
     def load_config(self, config_file):
         import configparser
@@ -95,7 +97,7 @@ class Presentation:
             images = conf.get('images', []).replace(' ', '') .split(',')
 
             # Add slide as object
-            slide_layout = self.prs.slide_masters[1].slide_layouts[layout_num]
+            slide_layout = self.prs.slide_layouts[layout_num]
             pptx_slide = self.prs.slides.add_slide(slide_layout)
 
             self.slides.append(pptx_slide)
@@ -125,6 +127,8 @@ class Presentation:
     def output_placeholders_pptx(self, output_pres_path: str):
         for master_slide in self.prs.slide_masters:
             for lay_id, layout in enumerate(master_slide.slide_layouts):
+                # if lay_id == 0:
+                #     continue
                 slide = self.prs.slides.add_slide(layout)
 
                 for ph in slide.placeholders:
@@ -167,13 +171,13 @@ class Slide():
     def add_images(self, images):
 
         # Should be 1 image but more were specified in config file
-        if self.layout_num in [1, 3] and len(images) > 1:
+        if self.layout_num in self.pres.one_image_slides and len(images) > 1:
             logger.critical("You've specified [{} images] for layout[{}]. Should be [{} image]. "
                             "Fix the config file.".format(len(images), self.layout_num, 1))
             sys.exit()
 
         # Should be more images but less was specivied in config file
-        elif self.layout_num in [2, 4, 5] and len(images) < 2:
+        elif self.layout_num in self.pres.two_images_slides and len(images) < 2:
             logger.critical("You've specified only [{} image] for layout[{}]. Should be [{} images]. "
                             "Fix the config file.".format(len(images), self.layout_num, 2))
             sys.exit()
@@ -193,7 +197,7 @@ class Slide():
                     os.path.basename(img1_path), os.path.dirname(img1_path)))
 
             # 2nd additional image is only in layout 2, 4, 5
-            if self.layout_num in [2, 4, 5]:
+            if self.layout_num in self.pres.two_images_slides:
                 img2_path = os.path.join(variant.fullpath, 'PICTURES', images[1])
 
                 if os.path.isfile(img2_path):
@@ -203,12 +207,12 @@ class Slide():
                         os.path.basename(img2_path), os.path.dirname(img2_path)))
 
     def add_fringebar(self, fringebar: str):
-        if self.layout_num in [1, 2] and fringebar is None:
+        if self.layout_num in [2, 4] and fringebar is None:
             logger.critical("Slide [{}] with Layout[{}] has to have fringebar but none was specified "
                             "in config file. Aborting script...".format(self.slide_num, self.layout_num))
             sys.exit()
 
-        elif self.layout_num not in [1, 2] and fringebar is not None:
+        elif self.layout_num not in [2, 4] and fringebar is not None:
             logger.error("Slide [{}] with Layout[{}] should not have FRINGEBAR assigned. "
                          "Please see the config file and check this slide.".format(self.slide_num, self.layout_num))
             return None
