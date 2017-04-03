@@ -6,9 +6,7 @@ sys.path.append(os.path.join(os.path.split(os.path.abspath(os.path.realpath(sys.
 import evePresentation
 import cli
 import colorlog
-# import better_exceptions
-
-# TODO: Add exception handle for case where IMG is not found in PICTURES folder
+import better_exceptions
 
 # Initialize LOGGER
 handler = colorlog.StreamHandler()
@@ -23,7 +21,6 @@ def main():
     # Get parser parameters from CLI
     parser = cli.get_parser()
     args = parser.parse_args()
-
 
     # Load Presentation Template
     logger.info("Starting...")

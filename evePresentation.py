@@ -6,6 +6,7 @@ import colorlog
 from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
+from collections import namedtuple
 
 
 formatter = colorlog.ColoredFormatter(
@@ -57,13 +58,32 @@ class Presentation:
     def add_variants(self, variants: list):
         if len(variants) not in range(1, 4):
             raise Exception("Only 1-3 variants possible for now...\n")
-        self.variants = variants
+
+        variant = namedtuple('variant', ('name', 'fullpath', 'num', 'exists'))
+        for var in variants:
+            variant.name = var.rstrip('/')
+            variant.fullpath = os.path.abspath(var)
+            variant.folder = '/'.join(variant.fullpath.split('/')[0:-1])
+            variant.num = variant.name.split('-')[0]
+            variant.exists = os.path.isdir(os.path.abspath(var))
+
+            # Check if variant (folder) exists
+            if variant.exists:
+                self.variants.append(variant)
+            else:
+                logger.critical("Project: {} was not found in: {} \nPlease check entered variant names. ".format(
+                    variant.name, variant.folder))
+                sys.exit()
 
     def get_num_of_slides(self) -> int:
         return len(self.prs.slides)
 
     def process_slides(self):
-        for section in self.conf.sections():
+        author = self.conf.get('User Settings', 'author')
+
+        for section in self.conf.sections():  # nebo: self.conf.sections()[1:]
+            if not self.conf.has_option(section, 'layout'):
+                continue
 
             # Convert argparse list of tuples to dictionary of key: val
             conf = dict(self.conf.items(section))
@@ -86,6 +106,7 @@ class Presentation:
             # Slide object: add title, fringebar and images
             slide = Slide(self, pptx_slide, layout_num)
             slide.set_title(title)
+            slide.set_author(author)
             slide.add_fringebar(fringebar)
             slide.add_images(images)
 
@@ -140,6 +161,9 @@ class Slide():
     def set_title(self, title: str):
         self.slide.shapes.title.text = title
 
+    def set_author(self, author: str):
+        self.slide.placeholders[20].text = author
+
     def add_images(self, images):
 
         # Should be 1 image but more were specified in config file
@@ -154,17 +178,14 @@ class Slide():
                             "Fix the config file.".format(len(images), self.layout_num, 2))
             sys.exit()
 
-        PROJECT_PATH = os.path.realpath(os.path.curdir)
-
         for idx, variant in enumerate(self.variants):
-            variant_num = variant.split('-')[0]
 
-            # TEXT (slide title)
-            self.slide.placeholders[17 + idx].text = variant_num
+            # TEXT
+            self.slide.placeholders[17 + idx].text = variant.num  # TITLE
 
             # IMAGES
             # 1st image is in all slide layouts
-            img1_path = os.path.join(PROJECT_PATH, variant, 'PICTURES', images[0])
+            img1_path = os.path.join(variant.fullpath, 'PICTURES', images[0])
             if os.path.isfile(img1_path):
                 self.slide.placeholders[11 + idx].insert_picture(img1_path)
             else:
@@ -173,7 +194,7 @@ class Slide():
 
             # 2nd additional image is only in layout 2, 4, 5
             if self.layout_num in [2, 4, 5]:
-                img2_path = os.path.join(PROJECT_PATH, variant, 'PICTURES', images[1])
+                img2_path = os.path.join(variant.fullpath, 'PICTURES', images[1])
 
                 if os.path.isfile(img2_path):
                     self.slide.placeholders[14 + idx].insert_picture(img2_path)
@@ -181,11 +202,7 @@ class Slide():
                     logger.error("Image: {} does not exist in \n         {}".format(
                         os.path.basename(img2_path), os.path.dirname(img2_path)))
 
-
-
     def add_fringebar(self, fringebar: str):
-        PROJECT_PATH = os.path.realpath(os.path.curdir)
-
         if self.layout_num in [1, 2] and fringebar is None:
             logger.critical("Slide [{}] with Layout[{}] has to have fringebar but none was specified "
                             "in config file. Aborting script...".format(self.slide_num, self.layout_num))
@@ -197,7 +214,7 @@ class Slide():
             return None
 
         if fringebar is not None:
-            fringebar_path = os.path.join(PROJECT_PATH, self.variants[0], 'PICTURES', fringebar)
+            fringebar_path = os.path.join(self.variants[0].fullpath, 'PICTURES', fringebar)
             if os.path.isfile(fringebar_path):
                 self.slide.placeholders[10].insert_picture(fringebar_path)
             else:

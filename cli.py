@@ -11,8 +11,10 @@ def get_parser():
     parser.description = """
     Make CFD presentation for comparison up to three variants.
 
-    Script HAS TO BE LAUNCHED in the folder with VARIANTS.
-    For example in: /ST/SkodaAuto/AEROAKUSTIKA/PRJ/SK326-0/"""
+    Script has to be launched in the FOLDER with VARIANTS.
+    Example:
+        YETI:  /ST/SkodaAuto/AEROAKUSTIKA/PRJ/SK326-0/
+        RAPID: /ST/SkodaAuto/AEROAKUSTIKA/PRJ/SK370-3/STACIONARNI-VYPOCET/"""
 
     # VERSION
     parser.add_argument('--version',
