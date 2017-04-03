@@ -1,7 +1,7 @@
 import os
 import argparse
 
-__version__ = 20170330
+__version__ = 20170404
 
 
 def get_parser():
