@@ -49,11 +49,15 @@ def get_parser():
                         default=os.path.join(os.path.dirname(__file__), 'slides.cfg'),
                         help='Optional user slides config file\n')
 
-
     parser.add_argument('--show_placeholders',
                         dest='show_placeholders',
                         action='store_true',
                         help='Generate PPTX that shows IDs and Names of placeholders\n')
+
+    parser.add_argument('--readme',
+                        dest='readme',
+                        action='store_true',
+                        help='Open README.md file with additional info / examples\n')
 
     # In main functions, use:
     # parser = get_parser()

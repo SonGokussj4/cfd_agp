@@ -2,7 +2,8 @@
 import os
 import sys
 # sys.path.append(os.path.join(os.path.dirname(__file__), 'libs'))
-sys.path.append(os.path.join(os.path.split(os.path.abspath(os.path.realpath(sys.argv[0])))[0], 'libs'))
+script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+sys.path.append(os.path.join(script_dir, 'libs'))
 import evePresentation
 import cli
 import colorlog
@@ -31,7 +32,13 @@ def main():
         pres_name = 'PLACEHOLDERS.pptx'
         pr.output_placeholders_pptx(pres_name)
         logger.info("Created {}".format(os.path.join(os.getcwd(), pres_name)))
-        sys.exit()
+        exit()
+
+    if args.readme:
+        import subprocess
+        readme_file = os.path.join(script_dir, 'README.md')
+        subprocess.call(['sublime', readme_file])
+        exit()
 
     # MAIN SCRIPT
     if not args.variants:
