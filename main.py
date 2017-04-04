@@ -34,13 +34,14 @@ def main():
         logger.info("Created {}".format(os.path.join(os.getcwd(), pres_name)))
         exit()
 
+    # Arg option: --readme
     if args.readme:
         import subprocess
         readme_file = os.path.join(script_dir, 'README.md')
         subprocess.call(['sublime', readme_file])
         exit()
 
-    # MAIN SCRIPT
+    # Check if user entered variants
     if not args.variants:
         logger.error("You have to specify variants (folder names...)\n")
         parser.print_help()

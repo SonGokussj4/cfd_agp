@@ -10,7 +10,7 @@ from collections import namedtuple
 
 
 formatter = colorlog.ColoredFormatter(
-    "%(log_color)s%(levelname)-8s%(reset)s %(message_log_color)s%(message)s",
+    '%(log_color)s%(levelname)-8s%(reset)s %(message_log_color)s%(message)s',
     datefmt=None,
     reset=True,
     log_colors={
@@ -61,20 +61,23 @@ class Presentation:
         if len(variants) not in range(1, 4):
             raise Exception("Only 1-3 variants possible for now...\n")
 
-        variant = namedtuple('variant', ('name', 'fullpath', 'num', 'exists'))
         for var in variants:
+            # Create a NamedTuple
+            variant = namedtuple('variant', ('name', 'fullpath', 'num', 'exists'))
+            # Fill the NamedTuple
             variant.name = var.rstrip('/')
             variant.fullpath = os.path.abspath(var)
             variant.folder = '/'.join(variant.fullpath.split('/')[0:-1])
             variant.num = variant.name.split('-')[0]
             variant.exists = os.path.isdir(os.path.abspath(var))
 
-            # Check if variant (folder) exists
+            # Check if variant (folder) exists, if true, add to list of Presentation.variants
             if variant.exists:
                 self.variants.append(variant)
             else:
-                logger.critical("Project: {} was not found in: {} \nPlease check entered variant names. ".format(
-                    variant.name, variant.folder))
+                logger.critical(
+                    "Project: {} was not found in: {} \nAre you in the RIGH folder??? "
+                    "And please check entered variant names. ".format(variant.name, os.getcwd()))
                 sys.exit()
 
     def get_num_of_slides(self) -> int:
@@ -185,7 +188,7 @@ class Slide():
         for idx, variant in enumerate(self.variants):
 
             # TEXT
-            self.slide.placeholders[17 + idx].text = variant.num  # TITLE
+            self.slide.placeholders[17 + idx].text = variant.num  # Variant number
 
             # IMAGES
             # 1st image is in all slide layouts
