@@ -49,6 +49,11 @@ def get_parser():
                         default=os.path.join(os.path.dirname(__file__), 'slides.cfg'),
                         help='Optional user slides config file\n')
 
+    parser.add_argument('--plots',
+                        dest='plots',
+                        action='store_true',
+                        help='Plot n-graphs depending on user setting in section [Graphs]\n')
+
     parser.add_argument('--show_placeholders',
                         dest='show_placeholders',
                         action='store_true',

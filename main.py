@@ -47,11 +47,16 @@ def main():
         parser.print_help()
         sys.exit()
 
-    # Load config file for slides
+    # Load config file for section [Slide \d]
     pr.load_config(args.cfg_file)
 
     # Add user selected variants
     pr.add_variants(args.variants)
+
+    # Arg options: --plots
+    if args.plots:
+        pr.plot_gradients()
+        exit()
 
     # Process slides
     pr.process_slides()

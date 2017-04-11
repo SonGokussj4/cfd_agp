@@ -8,7 +8,6 @@ from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from collections import namedtuple
 
-
 formatter = colorlog.ColoredFormatter(
     '%(log_color)s%(levelname)-8s%(reset)s %(message_log_color)s%(message)s',
     datefmt=None,
@@ -154,6 +153,38 @@ class Presentation:
                         run.text = "Id[{}]: {}".format(ph.placeholder_format.idx, ph.name)
 
         self.prs.save(output_pres_path)
+
+    def plot_gradients(self):
+        import csv
+        import numpy as np
+        import matplotlib.pyplot as plt
+        import pandas as pd
+
+        for sec in self.conf.options('Plots'):  # each plot
+            sec_name = self.conf.get('Plots', sec)
+
+            fig = plt.figure()
+            # fig.clf()
+            plt.style.use('seaborn-notebook')
+            plt.grid(True)
+            plt.title(sec_name)
+
+            # Gets a len(self.variants) num of curves to 1 plot
+            for variant in self.variants:
+
+                # Load x, y data of each variant
+                datafile = os.path.join(variant.fullpath, 'PICTURES', sec_name)
+                data = pd.read_csv(datafile, index_col=False, skiprows=5, comment='*', header=None, usecols=[0, 1])
+                x = data[0].values
+                y = data[1].values
+                plt.plot(x, y)
+                # print("x:", x)
+                # print("y:", y)
+
+            fig.savefig('{}.png'.format(sec_name), dpi=1200, format='png')
+        plt.show()
+
+
 
 
 class Slide():
