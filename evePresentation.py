@@ -159,6 +159,7 @@ class Presentation:
         import matplotlib.pyplot as plt
 
         plt_colors = ('blue', 'red', 'violet')
+        linreg_rozpeti = 1
 
         for sec in self.conf.options('Plots'):  # each plot
             sec_name = self.conf.get('Plots', sec)
@@ -194,6 +195,7 @@ class Presentation:
                 plt.ylabel(y_axis)
                 axes = plt.gca()
                 axes.set_ylim([-20, 50])
+                axes.invert_xaxis()
 
                 print("\nSec: {} / Variant: {}".format(sec_name, variant.name))
 
@@ -205,8 +207,14 @@ class Presentation:
                     next_num = y_data[idx + 1]
 
                     if prev_num > 0 and num < 0 or prev_num < 0 and num > 0:
+                        ls = [prev_num, num, next_num]
+                        num = min([abs(x) for x in ls])
+                        try:
+                            new_index = y_data.index(num)
+                        except ValueError:
+                            new_index = y_data.index(-num)
+                        idx = new_index
 
-                        linreg_rozpeti = 1
                         x = x_data[idx - linreg_rozpeti:idx + linreg_rozpeti + 1]
                         y = y_data[idx - linreg_rozpeti:idx + linreg_rozpeti + 1]
                         m, b = np.polyfit(x, y, 1)
