@@ -155,36 +155,73 @@ class Presentation:
         self.prs.save(output_pres_path)
 
     def plot_gradients(self):
-        import csv
         import numpy as np
         import matplotlib.pyplot as plt
-        import pandas as pd
+
+        plt_colors = ('blue', 'red', 'violet')
 
         for sec in self.conf.options('Plots'):  # each plot
             sec_name = self.conf.get('Plots', sec)
-
             fig = plt.figure()
-            # fig.clf()
+            plt.clf()
+            fig.clf()
             plt.style.use('seaborn-notebook')
             plt.grid(True)
             plt.title(sec_name)
-
-            # Gets a len(self.variants) num of curves to 1 plot
-            for variant in self.variants:
-
-                # Load x, y data of each variant
+            for var_idx, variant in enumerate(self.variants):
                 datafile = os.path.join(variant.fullpath, 'PICTURES', sec_name)
-                data = pd.read_csv(datafile, index_col=False, skiprows=5, comment='*', header=None, usecols=[0, 1])
-                x = data[0].values
-                y = data[1].values
-                plt.plot(x, y)
-                # print("x:", x)
-                # print("y:", y)
+                with open(datafile, 'r') as f:
+                    data = f.readlines()
 
-            fig.savefig('{}.png'.format(sec_name), dpi=1200, format='png')
-        plt.show()
+                x_axis = ''
+                y_axis = ''
+                x_data = []
+                y_data = []
 
+                for line in data:
+                    line = line.rstrip('\n')
+                    if '(X axis) ' in line:
+                        x_axis = line.split('(X axis) ')[-1]
+                    if '(Y axis) ' in line:
+                        y_axis = line.split('(Y axis) ')[-1]
+                    if line.startswith(' '):
+                        x_data.append(float(line.replace(' ', '').split(',')[0]))
+                        y_data.append(float(line.replace(' ', '').split(',')[1]))
 
+                plt.plot(x_data, y_data, color=plt_colors[var_idx], label=variant.name, linewidth=2.5)
+                plt.legend(loc='upper left', frameon=True)
+                plt.xlabel(x_axis)
+                plt.ylabel(y_axis)
+                axes = plt.gca()
+                axes.set_ylim([-20, 50])
+
+                print("\nSec: {} / Variant: {}".format(sec_name, variant.name))
+
+                for idx, num in enumerate(y_data):
+                    if idx in (0, len(y_data) - 1):
+                        continue
+
+                    prev_num = y_data[idx - 1]
+                    next_num = y_data[idx + 1]
+
+                    if prev_num > 0 and num < 0 or prev_num < 0 and num > 0:
+
+                        linreg_rozpeti = 1
+                        x = x_data[idx - linreg_rozpeti:idx + linreg_rozpeti + 1]
+                        y = y_data[idx - linreg_rozpeti:idx + linreg_rozpeti + 1]
+                        m, b = np.polyfit(x, y, 1)
+                        print("Protnuti X: [{} > {} < {}] ... Polyfit: m: {:.0f}, b: {:.0f}".format(
+                            prev_num, num, next_num, m, b))
+                        plt.annotate(
+                            '{:.0f}'.format(m, b), xy=(x_data[idx], 0), xycoords='data', color=plt_colors[var_idx],
+                            xytext=(+15, +15 + var_idx * 15), textcoords='offset points', fontsize=10,
+                            bbox=dict(facecolor='white', edgecolor='None', alpha=0.65),
+                            arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))
+                    else:
+                        continue
+                fig.savefig('{}.png'.format(sec_name), dpi=800, bbox_inches='tight')
+
+            # plt.show()
 
 
 class Slide():
