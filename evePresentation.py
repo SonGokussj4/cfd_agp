@@ -194,7 +194,7 @@ class Presentation:
                 plt.xlabel(x_axis)
                 plt.ylabel(y_axis)
                 axes = plt.gca()
-                axes.set_ylim([-20, 50])
+                axes.set_ylim([plt.ylim()[0], plt.ylim()[1] + 5])
                 axes.invert_xaxis()
 
                 print("\nSec: {} / Variant: {}".format(sec_name, variant.name))
