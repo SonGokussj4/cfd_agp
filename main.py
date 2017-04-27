@@ -40,6 +40,10 @@ def main():
         readme_file = os.path.join(script_dir, 'README.md')
         subprocess.call(['sublime', readme_file])
         exit()
+    # Arg option: -g --gradients
+    if args.gradients:
+        pr.gradients_from_file(args.gradients)
+        exit()
 
     # Check if user entered variants
     if not args.variants:

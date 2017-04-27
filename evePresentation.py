@@ -1,12 +1,18 @@
 """Evektor library for all things"""
 import os
 import sys
+import csv
 import pptx
 import colorlog
+import glob
+import numpy as np
+import matplotlib.pyplot as plt
+import collections
 from pptx.util import Pt
 from pptx.enum.text import PP_ALIGN
 from pptx.dml.color import RGBColor
 from collections import namedtuple
+from pprint import pprint
 
 formatter = colorlog.ColoredFormatter(
     '%(log_color)s%(levelname)-8s%(reset)s %(message_log_color)s%(message)s',
@@ -37,6 +43,20 @@ handler.setFormatter(formatter)
 logger = colorlog.getLogger(__name__)
 logger.addHandler(handler)
 logger.setLevel('INFO')
+
+
+class Line:
+
+    def __init__(self, x1, y1, x2, y2):
+        self.x1 = x1
+        self.y1 = y1
+        self.x2 = x2
+        self.y2 = y2
+        self.m, self.b = np.polyfit([x1, x2], [y1, y2], 1)
+
+    def get_z(self, coord_x):
+        x = float(coord_x)
+        return self.m * x + self.b
 
 
 class Presentation:
@@ -154,10 +174,129 @@ class Presentation:
 
         self.prs.save(output_pres_path)
 
-    def plot_gradients(self):
-        import numpy as np
-        import matplotlib.pyplot as plt
+    def gradients_from_file(self, grad_file):
+        grad_file_base = '_'.join(grad_file.split('_')[0:-1])
+        files = glob.glob('{}*'.format(grad_file_base))
 
+        line_win = Line(0.655, 0.688, 0.8, 0.696)
+        line_door = Line(0.655, 0.67, 0.8, 0.678)
+
+        # NamedTuple for better manipulation with data
+        linetuple = collections.namedtuple('line', ['idx', 'dist', 'val', 'zcoord'])
+
+        win_dict = {}
+        door_dict = {}
+
+        for file in files:
+            # file = '/ST/SkodaAuto/AEROAKUSTIKA/PRJ/SK370-3/STACIONARNI-VYPOCET/S200-BASIC-MIRROR-DDKM1/PICTURES/Ux_GRAD_0.800'
+            x_coord = file.split('_')[-1]
+            logger.info("Reading file: {}".format(file))
+
+            distlist, zlist = [], []
+
+            with open(file, 'r') as f:
+                lines = [line.strip().replace(' ', '') for line in f.readlines()]
+
+            ls = distlist  # active list
+            for idx, line in enumerate(lines):
+                if line.startswith('$') and not lines[idx - 1].startswith('$') and idx != 0:
+                    ls = zlist
+                if not line.startswith('$'):
+                    ls.append(line.split(','))
+
+            data = []
+            for idx, (distdata, zdata) in enumerate(zip(distlist, zlist)):
+                line = linetuple(idx=idx,
+                                 dist=float(distdata[0]),
+                                 zcoord=float(zdata[0]),
+                                 val=float(zdata[1]))
+                data.append(line)
+
+            for idx, line in enumerate(data):
+                # Ignore first and last
+                if idx == 0 or idx == len(data) - 1:
+                    continue
+
+                prev_num = data[idx - 1].val
+                y_num = line.val
+                next_num = data[idx + 1].val
+
+                # Find where it intersect with 0 y axis
+                if prev_num > 0 and y_num < 0 or prev_num < 0 and y_num > 0:
+                    ls = [prev_num, y_num, next_num]
+
+                    # Find the minimum absolute number of found elements
+                    y_num = min([abs(x) for x in ls])
+                    res = [line.idx for line in data if abs(line.val) == abs(y_num) if line.idx != 0]
+
+                    # Edge conditional (it's likely on the edge of line)
+                    if res == []:
+                        continue
+
+                    new_idx = res[0]
+
+                    # Create list of 3 points of lines by updated new_idx, one of each side of the middle y_num
+                    x_coords = [line.dist for line in data[new_idx - 1:new_idx + 2]]
+                    y_coords = [line.val for line in data[new_idx - 1:new_idx + 2]]
+
+                    if line.zcoord < line_win.get_z(x_coord) and line.zcoord > line_door.get_z(x_coord):
+                        location = 'Lista'
+
+                    elif line.zcoord >= line_win.get_z(x_coord):
+                        location = 'Okno'
+                        m, b = np.polyfit(x=x_coords, y=y_coords, deg=1)
+                        m = abs(m)  # Absolute value
+                        if not win_dict.get(x_coord, False):
+                            win_dict[x_coord] = m
+                        else:
+                            if abs(win_dict[x_coord]) < abs(m):
+                                win_dict[x_coord] = m
+
+                    elif line.zcoord <= line_door.get_z(x_coord):
+                        location = 'Dvere'
+                        m, b = np.polyfit(x=x_coords, y=y_coords, deg=1)
+                        m = abs(m)  # Absolute value
+                        if not door_dict.get(x_coord, False):
+                            door_dict[x_coord] = m
+                        else:
+                            if abs(door_dict[x_coord]) < abs(m):
+                                door_dict[x_coord] = m
+
+                    else:
+                        location = "NEZNAMA CHYBA"
+
+                    print("{:<5} Protnuti osy: [{} > {} < {}] ... Polyfit: m: {:.0f}, b: {:.0f}".format(
+                          location, data[new_idx - 1].val, data[new_idx].val, data[new_idx + 1].val, m, b))
+
+        win_sorted = sorted(win_dict.items())
+        x, y = zip(*win_sorted)
+        plt.plot(x, y)
+        with open('Ux_GRAD_results_WINDOW', 'w') as f:
+            wr = csv.writer(f, quoting=csv.QUOTE_NONE)
+            wr.writerows(win_sorted)
+            logger.info("WINDOW data saved to: {}".format(os.path.abspath(f.name)))
+
+        door_sorted = sorted(door_dict.items())
+        x, y = zip(*door_sorted)
+        plt.plot(x, y)
+        with open('DOOR_Ux_GRAD_results_DOOR', 'w') as f:
+            wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+            wr.writerows(door_sorted)
+            logger.info("DOOR data saved to: {}".format(os.path.abspath(f.name)))
+
+
+        plt.legend(loc='upper left', frameon=True)
+        plt.xlabel('X_Coordinate')
+        plt.ylabel('gradUx(m/s)')
+
+        plt.show()
+
+
+
+
+
+
+    def plot_gradients(self):
         plt_colors = ('blue', 'red', 'violet')
         linreg_rozpeti = 1
 
@@ -221,7 +360,7 @@ class Presentation:
                         print("Protnuti X: [{} > {} < {}] ... Polyfit: m: {:.0f}, b: {:.0f}".format(
                             prev_num, num, next_num, m, b))
                         plt.annotate(
-                            '{:.0f}'.format(m, b), xy=(x_data[idx], 0), xycoords='data', color=plt_colors[var_idx],
+                            '{:.0f}'.format(m), xy=(x_data[idx], 0), xycoords='data', color=plt_colors[var_idx],
                             xytext=(+15, +15 + var_idx * 15), textcoords='offset points', fontsize=10,
                             bbox=dict(facecolor='white', edgecolor='None', alpha=0.65),
                             arrowprops=dict(arrowstyle="->", connectionstyle="arc3,rad=.2"))

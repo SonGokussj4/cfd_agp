@@ -54,6 +54,12 @@ def get_parser():
                         action='store_true',
                         help='Plot n-graphs depending on user setting in section [Graphs]\n')
 
+    parser.add_argument('-g',
+                        dest='gradients',
+                        metavar='grad_file',
+                        type=str,
+                        help='Plot gradients from all files named by the first selected file. (UX_GRAD_0.655)\n')
+
     parser.add_argument('--show_placeholders',
                         dest='show_placeholders',
                         action='store_true',
