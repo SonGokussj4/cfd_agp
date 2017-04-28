@@ -242,6 +242,7 @@ class Presentation:
 
                     if line.zcoord < line_win.get_z(x_coord) and line.zcoord > line_door.get_z(x_coord):
                         location = 'Lista'
+                        m, b = 0, 0
 
                     elif line.zcoord >= line_win.get_z(x_coord):
                         location = 'Okno'
@@ -266,24 +267,36 @@ class Presentation:
                     else:
                         location = "NEZNAMA CHYBA"
 
-                    print("{:<5} Protnuti osy: [{} > {} < {}] ... Polyfit: m: {:.0f}, b: {:.0f}".format(
-                          location, data[new_idx - 1].val, data[new_idx].val, data[new_idx + 1].val, m, b))
+                    logger.info(
+                        "{loc:<5} Intersection: [{prev:>12} > {cur:>12} < {next:>12}] {polyfit}".format(
+                            loc=location,
+                            prev=data[new_idx - 1].val,
+                            cur=data[new_idx].val,
+                            next=data[new_idx + 1].val,
+                            polyfit='... Polyfit: m: {m:.0f}, b: {b:.0f}'.format(m=m, b=b) if m != 0 else ' '
+                        )
+                    )
 
         win_sorted = sorted(win_dict.items())
-        x, y = zip(*win_sorted)
-        plt.plot(x, y)
+        door_sorted = sorted(door_dict.items())
+
+        if win_sorted != []:
+            wx, yy = zip(*win_sorted)
+            plt.plot(wx, yy, label='Window')
+
         with open('Ux_GRAD_results_WINDOW', 'w') as f:
             wr = csv.writer(f, quoting=csv.QUOTE_NONE)
             wr.writerows(win_sorted)
-            logger.info("WINDOW data saved to: {}".format(os.path.abspath(f.name)))
+            logger.info("WINDOW data saved to: \n{}".format(os.path.abspath(f.name)))
 
-        door_sorted = sorted(door_dict.items())
-        x, y = zip(*door_sorted)
-        plt.plot(x, y)
+        if door_sorted != []:
+            dx, dy = zip(*door_sorted)
+            plt.plot(dx, dy, label='Door')
+
         with open('Ux_GRAD_results_DOOR', 'w') as f:
             wr = csv.writer(f, quoting=csv.QUOTE_NONE)
             wr.writerows(door_sorted)
-            logger.info("DOOR data saved to: {}".format(os.path.abspath(f.name)))
+            logger.info("DOOR data saved to: \n{}".format(os.path.abspath(f.name)))
 
 
         plt.legend(loc='upper left', frameon=True)
@@ -291,11 +304,6 @@ class Presentation:
         plt.ylabel('gradUx(m/s)')
 
         plt.show()
-
-
-
-
-
 
     def plot_gradients(self):
         plt_colors = ('blue', 'red', 'violet')
