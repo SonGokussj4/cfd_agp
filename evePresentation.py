@@ -2,6 +2,7 @@
 import os
 import sys
 import csv
+import pdb
 import pptx
 import colorlog
 import glob
@@ -175,9 +176,9 @@ class Presentation:
         self.prs.save(output_pres_path)
 
     def gradients_from_file(self, grad_file):
+        os.chdir('PICTURES')
         grad_file_base = '_'.join(grad_file.split('_')[0:-1])
-        files = glob.glob('{}*'.format(grad_file_base))
-
+        files = glob.glob('{}_[0-9][.][0-9][0-9][0-9]'.format(grad_file_base))
         line_win = Line(0.655, 0.688, 0.8, 0.696)
         line_door = Line(0.655, 0.67, 0.8, 0.678)
 
@@ -279,8 +280,8 @@ class Presentation:
         door_sorted = sorted(door_dict.items())
         x, y = zip(*door_sorted)
         plt.plot(x, y)
-        with open('DOOR_Ux_GRAD_results_DOOR', 'w') as f:
-            wr = csv.writer(f, quoting=csv.QUOTE_ALL)
+        with open('Ux_GRAD_results_DOOR', 'w') as f:
+            wr = csv.writer(f, quoting=csv.QUOTE_NONE)
             wr.writerows(door_sorted)
             logger.info("DOOR data saved to: {}".format(os.path.abspath(f.name)))
 
