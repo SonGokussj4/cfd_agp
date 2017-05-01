@@ -2,95 +2,68 @@
 import os
 import sys
 # sys.path.append(os.path.join(os.path.dirname(__file__), 'libs'))
-sys.path.append(os.path.join(os.path.split(os.path.abspath(os.path.realpath(sys.argv[0])))[0], 'libs'))
-from evePresentation import Presentation
+script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
+sys.path.append(os.path.join(script_dir, 'libs'))
+import evePresentation
 import cli
+import colorlog
+import better_exceptions
+
+# Initialize LOGGER
+handler = colorlog.StreamHandler()
+handler.setFormatter(evePresentation.formatter)
+logger = colorlog.getLogger(__name__)
+logger.addHandler(handler)
+logger.setLevel('DEBUG')
 
 
 def main():
-    """
-    Main function
-
-    # layouts:
-    #   - [0] ... Title, 2 Content  (X)
-    #   - [1] ... Fringebar, 3 normal pictures  (1 fringebar.jpeg + 1 car.jpeg)
-    #   - [2] ... Fringebar, 6 normal pictures  (1 fringebar.jpeg + 2 car.jpeg)
-    #   - [3] ... 3 normal pictures  (1 car.jpeg)
-    #   - [4] ... 6 normal pictures  (2 car.jpeg)
-    #   - [5] ... 6 wider pictures  (2 car.jpeg)
-            """
+    """Main function"""
     # Get parser parameters from CLI
-    args = cli.get_parser()
+    parser = cli.get_parser()
+    args = parser.parse_args()
 
     # Load Presentation Template
-    pr = Presentation(src_prs_path=args.input_pptx)
+    logger.info("Starting...")
+    pr = evePresentation.Presentation(src_prs_path=args.input_pptx)
 
-    # Add Variants
+    # Arg option: --show_placeholders
+    if args.show_placeholders:
+        pres_name = 'PLACEHOLDERS.pptx'
+        pr.output_placeholders_pptx(pres_name)
+        logger.info("Created {}".format(os.path.join(os.getcwd(), pres_name)))
+        exit()
+
+    # Arg option: --readme
+    if args.readme:
+        import subprocess
+        readme_file = os.path.join(script_dir, 'README.md')
+        subprocess.call(['sublime', readme_file])
+        exit()
+    # Arg option: -g --gradients
+    if args.gradients:
+        pr.gradients_from_file(args.gradients)
+        exit()
+
+    # Check if user entered variants
+    if not args.variants:
+        logger.error("You have to specify variants (folder names...)\n")
+        parser.print_help()
+        sys.exit()
+
+    # Load config file for section [Slide \d]
+    pr.load_config(args.cfg_file)
+
+    # Add user selected variants
     pr.add_variants(args.variants)
-    # pr.output_placeholders_pptx('PLACEHOLDERS.pptx')
 
-    # Add Slides
-    # SLIDE 3: TLAKOVÝ GRADIENT
-    slide = pr.add_slide(title="TLAKOVÝ GRADIENT", layout_num=2)
-    slide.add_fringebar('GRADP_fringebar.jpeg')
-    slide.add_images('GRADP1.jpeg',
-                     'GRADP2.jpeg')
+    # Arg options: --plots
+    if args.plots:
+        pr.plot_gradients()
+        exit()
 
-    # SLIDE 4: TLAKOVÝ GRADIENT REZ Z=0.81
-    slide = pr.add_slide("TLAKOVÝ GRADIENT REZ Z=0.81", 1)
-    slide.add_fringebar('GRADP-REZ_fringebar.jpeg')
-    slide.add_images('GRADP-REZ-Z081.jpeg')
-
-    # SLIDE 5: VORTICITY X
-    slide = pr.add_slide("VORTICITY X", 2)
-    slide.add_fringebar('VORTICITY_X_a_fringebar.jpeg')
-    slide.add_images('VORTICITY_X_a2.jpeg',
-                     'VORTICITY_X_a1.jpeg')
-
-    # SLIDE 6: VORTICITY X
-    slide = pr.add_slide("VORTICITY X", 2)
-    slide.add_fringebar('VORTICITY_X_b_fringebar.jpeg')
-    slide.add_images('VORTICITY_X_b1.jpeg',
-                     'VORTICITY_X_b2.jpeg')
-
-    # SLIDE 7: VORTICITY X
-    slide = pr.add_slide("VORTICITY X", 2)
-    slide.add_fringebar('VORTICITY_X_c_fringebar.jpeg')
-    slide.add_images('VORTICITY_X_c2.jpeg',
-                     'VORTICITY_X_c1.jpeg')
-
-    # SLIDE 8: KINETICKÁ ENERGIE MEZNÍ VRSTVY
-    slide = pr.add_slide("KINETICKÁ ENERGIE MEZNÍ VRSTVY", 2)
-    slide.add_fringebar('kineticka_energie_fringebar.jpeg')
-    slide.add_images('kineticka_energie3.jpeg',
-                     'kineticka_energie1.jpeg')
-
-    # SLIDE 9: KINETICKÁ ENERGIE MEZNÍ VRSTVY
-    slide = pr.add_slide("KINETICKÁ ENERGIE MEZNÍ VRSTVY", 2)
-    slide.add_fringebar('kineticka_energie_fringebar.jpeg')
-    slide.add_images('kineticka_energie4.jpeg',
-                     'kineticka_energie2.jpeg')
-
-    # SLIDE 10: RYCHLOST MEZNÍ VRSTVY
-    slide = pr.add_slide("RYCHLOST MEZNÍ VRSTVY", 2)
-    slide.add_fringebar('RYCHLOST_MEZNI_VRSTVY_fringebar.jpeg')
-    slide.add_images('RYCHLOST_MEZNI_VRSTVY1.jpeg',
-                     'RYCHLOST_MEZNI_VRSTVY2.jpeg')
-
-    # SLIDE 11: KINETICKÁ ENERGIE MEZNÍ VRSTVY
-    slide = pr.add_slide("RYCHLOST MEZNÍ VRSTVY", 2)
-    slide.add_fringebar('RYCHLOST_MEZNI_VRSTVY_fringebar.jpeg')
-    slide.add_images('RYCHLOST_MEZNI_VRSTVY4.jpeg',
-                     'RYCHLOST_MEZNI_VRSTVY3.jpeg')
-
-    # SLIDE 12: KINETICKÁ ENERGIE MEZNÍ VRSTVY
-    slide = pr.add_slide("KINETICKÁ ENERGIE MEZNÍ VRSTVY", 4)
-    slide.add_images('iso_plocha_0ms1.jpeg', 'iso_plocha_0ms2.jpeg')
-
-    # SLIDE 13: KINETICKÁ ENERGIE MEZNÍ VRSTVY
-    slide = pr.add_slide("ISO PLOCHA – RYCHLOST PROUDU 0 m/s V OSE X", 5)
-    slide.add_images('iso_plocha_0ms3.jpeg',
-                     'iso_plocha_0ms4.jpeg')
+    # Process slides
+    pr.process_slides()
 
     # Save Presentation
     pr.save_presentation(args.output_pptx)
