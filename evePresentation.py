@@ -7,6 +7,7 @@ import pptx
 import colorlog
 import glob
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import collections
 from pptx.util import Pt
@@ -205,27 +206,17 @@ class Presentation:
             x_coord = file.split('_')[-1]
             logger.info("Reading file: {}".format(file))
 
-            distlist, zlist = [], []
+            # Load data into Pandas DataFrame
+            df = pd.read_table(file, comment='$', delimiter=',', engine='python', skipfooter=1, names=['val', 'z'])
+            df_group = df.groupby('z', sort=False).apply(lambda x: tuple(x['val'])).reset_index()
+            res = zip(df_group.get('z').tolist(), df_group.get(0).tolist())
 
-            with open(file, 'r') as f:
-                lines = [line.strip().replace(' ', '') for line in f.readlines()]
-
-            ls = distlist  # active list
-            for idx, line in enumerate(lines):
-                if line.startswith('$') and not lines[idx - 1].startswith('$') and idx != 0:
-                    ls = zlist
-                if not line.startswith('$'):
-                    ls.append(line.split(','))
-
-            data = []
-            for idx, (distdata, zdata) in enumerate(zip(distlist, zlist)):
-                line = linetuple(idx=idx,
-                                 dist=float(distdata[0]),
-                                 zcoord=float(zdata[0]),
-                                 val=float(zdata[1]))
-                data.append(line)
+            # Create a NamedTuple from loaded data
+            data = [linetuple(idx=idx, val=val, dist=vals[0], zcoord=vals[1])
+                    for idx, (val, vals) in enumerate(res)]
 
             for idx, line in enumerate(data):
+
                 # Ignore first and last
                 if idx == 0 or idx == len(data) - 1:
                     continue
@@ -298,7 +289,7 @@ class Presentation:
 
         with open('Ux_GRAD_results_WINDOW', 'w') as f:
             wr = csv.writer(f, quoting=csv.QUOTE_NONE)
-            wr.writerows(win_sorted)
+            # wr.writerows(win_sorted)
             logger.info("WINDOW data saved to: \n{}".format(os.path.abspath(f.name)))
 
         if door_sorted != []:
@@ -307,7 +298,7 @@ class Presentation:
 
         with open('Ux_GRAD_results_DOOR', 'w') as f:
             wr = csv.writer(f, quoting=csv.QUOTE_NONE)
-            wr.writerows(door_sorted)
+            # wr.writerows(door_sorted)
             logger.info("DOOR data saved to: \n{}".format(os.path.abspath(f.name)))
 
 
