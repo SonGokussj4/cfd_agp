@@ -26,18 +26,14 @@ def main():
     args = parser.parse_args()
 
     # Check if user entered variants
-    if not args.variants:
-        logger.error("You have to specify variants (folder names...)\n")
-        parser.print_help()
-        sys.exit()
-
-    if os.path.isfile(args.variants[0]):
-        config = configparser.ConfigParser()
-        config.read(args.variants[0])
-        args.variants = [config[section] for section in config.sections()]
-        args.cfg_file = config.get('DEFAULT', 'cfg_file', fallback=args.cfg_file)
-        args.input_pptx = config.get('DEFAULT', 'input_pptx', fallback=args.input_pptx)
-        args.output_pptx = config.get('DEFAULT', 'output_pptx', fallback=args.output_pptx)
+    if args.variants:
+        if os.path.isfile(args.variants[0]):
+            config = configparser.ConfigParser()
+            config.read(args.variants[0])
+            args.variants = [config[section] for section in config.sections()]
+            args.cfg_file = config.get('DEFAULT', 'cfg_file', fallback=args.cfg_file)
+            args.input_pptx = config.get('DEFAULT', 'input_pptx', fallback=args.input_pptx)
+            args.output_pptx = config.get('DEFAULT', 'output_pptx', fallback=args.output_pptx)
 
     # Load Presentation Template
     logger.info("Starting...")
@@ -60,6 +56,12 @@ def main():
     if args.gradients:
         pr.gradients_from_file(args.gradients)
         exit()
+
+    # Check if user entered variants
+    if not args.variants:
+        logger.error("You have to specify variants (folder names...)\n")
+        parser.print_help()
+        sys.exit()
 
     # Load config file for section [Slide \d]
     pr.load_config(args.cfg_file)
