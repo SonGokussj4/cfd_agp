@@ -8,6 +8,8 @@ import evePresentation
 import cli
 import colorlog
 import better_exceptions
+import configparser
+import os.path
 
 # Initialize LOGGER
 handler = colorlog.StreamHandler()
@@ -22,6 +24,14 @@ def main():
     # Get parser parameters from CLI
     parser = cli.get_parser()
     args = parser.parse_args()
+
+    if os.path.isfile(args.variants[0]):
+        config = configparser.ConfigParser()
+        config.read(args.variants[0])
+        args.variants = [config[section] for section in config.sections()]
+        args.cfg_file = config.get('DEFAULT', 'cfg_file', fallback=args.cfg_file)
+        args.input_pptx = config.get('DEFAULT', 'input_pptx', fallback=args.input_pptx)
+        args.output_pptx = config.get('DEFAULT', 'output_pptx', fallback=args.output_pptx)
 
     # Load Presentation Template
     logger.info("Starting...")

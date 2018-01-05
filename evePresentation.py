@@ -84,19 +84,31 @@ class Presentation:
         for var in variants:
             # Create a NamedTuple
             variant = namedtuple('variant', ('name', 'fullpath', 'num', 'exists'))
+            
+            # Check if we have simple path string or dictionary
+            if isinstance(var, str):
+                var_label = ""
+                var_path = var
+            else:
+                var_label = var.get("label", "")
+                var_path = var.get("path")
+
             # Fill the NamedTuple
-            variant.name = var.rstrip('/')
-            variant.fullpath = os.path.abspath(var)
+            variant.name = var_path.rstrip('/')
+            variant.fullpath = os.path.abspath(var_path)
             variant.folder = '/'.join(variant.fullpath.split('/')[0:-1])
-            variant.num = variant.name.split('-')[0]
-            variant.exists = os.path.isdir(os.path.abspath(var))
+            if not var_label:
+                var_label = variant.name.split('-')[0]
+            variant.num = var_label
+            variant.exists = os.path.isdir(os.path.abspath(var_path))
 
             # Check if variant (folder) exists, if true, add to list of Presentation.variants
             if variant.exists:
                 self.variants.append(variant)
+                logger.info("Added variant {0} in {1}".format(var_label, var_path))
             else:
                 logger.critical(
-                    "Project: {} was not found in: {} \nAre you in the RIGH folder??? "
+                    "Project: {} was not found in: {} \nAre you in the RIGHT folder??? "
                     "And please check entered variant names. ".format(variant.name, os.getcwd()))
                 sys.exit()
 
