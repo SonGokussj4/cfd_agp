@@ -25,6 +25,12 @@ def main():
     parser = cli.get_parser()
     args = parser.parse_args()
 
+    # Check if user entered variants
+    if not args.variants:
+        logger.error("You have to specify variants (folder names...)\n")
+        parser.print_help()
+        sys.exit()
+
     if os.path.isfile(args.variants[0]):
         config = configparser.ConfigParser()
         config.read(args.variants[0])
@@ -54,12 +60,6 @@ def main():
     if args.gradients:
         pr.gradients_from_file(args.gradients)
         exit()
-
-    # Check if user entered variants
-    if not args.variants:
-        logger.error("You have to specify variants (folder names...)\n")
-        parser.print_help()
-        sys.exit()
 
     # Load config file for section [Slide \d]
     pr.load_config(args.cfg_file)
