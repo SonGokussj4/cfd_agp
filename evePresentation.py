@@ -438,12 +438,12 @@ class Slide():
                         os.path.basename(img2_path), os.path.dirname(img2_path)))
 
     def add_fringebar(self, fringebar: str):
-        if self.layout_num in [2, 4] and fringebar is None:
+        if self.layout_num in [2, 4, 10, 11] and fringebar is None:
             logger.critical("Slide [{}] with Layout[{}] has to have fringebar but none was specified "
                             "in config file. Aborting script...".format(self.slide_num, self.layout_num))
             sys.exit()
 
-        elif self.layout_num not in [2, 4] and fringebar is not None:
+        elif self.layout_num not in [2, 4, 10, 11] and fringebar is not None:
             logger.error("Slide [{}] with Layout[{}] should not have FRINGEBAR assigned. "
                          "Please see the config file and check this slide.".format(self.slide_num, self.layout_num))
             return None
