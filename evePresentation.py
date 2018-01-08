@@ -70,7 +70,7 @@ class Presentation:
         self.variants = []
         self.conf = None
         self.one_image_slides = [2, 3]
-        self.two_images_slides = [4, 5, 6, 7, 8, 9]
+        self.two_images_slides = [4, 5, 6, 7, 8, 9, 10, 11]
 
     def load_config(self, config_file):
         logger.info("Loading slides configuration: {}".format(config_file))
