@@ -73,6 +73,7 @@ class Presentation:
         self.two_images_slides = [4, 5, 6]
 
     def load_config(self, config_file):
+        logger.info("Loading slides configuration: {}".format(config_file))
         import configparser
         conf = configparser.ConfigParser()
         conf.read(config_file)

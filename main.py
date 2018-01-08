@@ -28,7 +28,7 @@ def main():
     # Check if user entered variants
     if args.variants:
         if os.path.isfile(args.variants[0]):
-            config = configparser.ConfigParser()
+            config = configparser.ConfigParser(interpolation=configparser.ExtendedInterpolation())
             config.read(args.variants[0])
             args.variants = [config[section] for section in config.sections()]
             args.cfg_file = config.get('DEFAULT', 'cfg_file', fallback=args.cfg_file)
