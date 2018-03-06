@@ -86,7 +86,7 @@ class Presentation:
         for var in variants:
             # Create a NamedTuple
             variant = namedtuple('variant', ('name', 'fullpath', 'num', 'exists'))
-            
+
             # Check if we have simple path string or dictionary
             if isinstance(var, str):
                 var_label = ""
@@ -453,8 +453,8 @@ class Slide():
             #         logger.error("Image: {} does not exist in \n         {}".format(
             #             os.path.basename(img_orig_path), os.path.dirname(img_orig_path)))
 
-            # 1 image on whole slide in layout 7
-            if self.layout_num == 7:
+            # 1 image on whole slide in layout 12
+            if self.layout_num == 12:
                 img_orig_path = os.path.join(variant.fullpath, 'PICTURES', images[0])
                 if os.path.isfile(img_orig_path):
                     self.slide.placeholders[11].insert_picture(img_orig_path, crop=False)
@@ -462,8 +462,8 @@ class Slide():
                     logger.error("Image: {} does not exist in \n         {}".format(
                         os.path.basename(img_orig_path), os.path.dirname(img_orig_path)))
 
-            # 6 original images in layout 8
-            if self.layout_num == 8:
+            # 6 original images in layout 13
+            if self.layout_num == 13:
                 for NUM in range(0, 6):
                     img_orig_path = os.path.join(variant.fullpath, 'PICTURES', images[NUM])
                     if os.path.isfile(img_orig_path):
