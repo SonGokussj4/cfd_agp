@@ -7,6 +7,7 @@ import pptx
 import colorlog
 import glob
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import collections
 from pptx.util import Pt
@@ -193,27 +194,17 @@ class Presentation:
             x_coord = file.split('_')[-1]
             logger.info("Reading file: {}".format(file))
 
-            distlist, zlist = [], []
+            # Load data into Pandas DataFrame
+            df = pd.read_table(file, comment='$', delimiter=',', engine='python', skipfooter=1, names=['val', 'z'])
+            df_group = df.groupby('z', sort=False).apply(lambda x: tuple(x['val'])).reset_index()
+            res = zip(df_group.get('z').tolist(), df_group.get(0).tolist())
 
-            with open(file, 'r') as f:
-                lines = [line.strip().replace(' ', '') for line in f.readlines()]
-
-            ls = distlist  # active list
-            for idx, line in enumerate(lines):
-                if line.startswith('$') and not lines[idx - 1].startswith('$') and idx != 0:
-                    ls = zlist
-                if not line.startswith('$'):
-                    ls.append(line.split(','))
-
-            data = []
-            for idx, (distdata, zdata) in enumerate(zip(distlist, zlist)):
-                line = linetuple(idx=idx,
-                                 dist=float(distdata[0]),
-                                 zcoord=float(zdata[0]),
-                                 val=float(zdata[1]))
-                data.append(line)
+            # Create a NamedTuple from loaded data
+            data = [linetuple(idx=idx, val=val, dist=vals[0], zcoord=vals[1])
+                    for idx, (val, vals) in enumerate(res)]
 
             for idx, line in enumerate(data):
+
                 # Ignore first and last
                 if idx == 0 or idx == len(data) - 1:
                     continue
@@ -286,7 +277,7 @@ class Presentation:
 
         with open('Ux_GRAD_results_WINDOW', 'w') as f:
             wr = csv.writer(f, quoting=csv.QUOTE_NONE)
-            wr.writerows(win_sorted)
+            # wr.writerows(win_sorted)
             logger.info("WINDOW data saved to: \n{}".format(os.path.abspath(f.name)))
 
         if door_sorted != []:
@@ -295,7 +286,7 @@ class Presentation:
 
         with open('Ux_GRAD_results_DOOR', 'w') as f:
             wr = csv.writer(f, quoting=csv.QUOTE_NONE)
-            wr.writerows(door_sorted)
+            # wr.writerows(door_sorted)
             logger.info("DOOR data saved to: \n{}".format(os.path.abspath(f.name)))
 
 
@@ -390,13 +381,18 @@ class Slide():
         self.slide_num = pres.get_num_of_slides()
 
     def set_title(self, title: str):
-        self.slide.shapes.title.text = title
+        try:
+            self.slide.shapes.title.text = title
+        except AttributeError:
+            pass
 
     def set_author(self, author: str):
-        self.slide.placeholders[20].text = author
+        try:
+            self.slide.placeholders[20].text = author
+        except KeyError:
+            pass
 
     def add_images(self, images):
-
         # Should be 1 image but more were specified in config file
         if self.layout_num in self.pres.one_image_slides and len(images) > 1:
             logger.critical("You've specified [{} images] for layout[{}]. Should be [{} image]. "
@@ -410,20 +406,23 @@ class Slide():
             sys.exit()
 
         for idx, variant in enumerate(self.variants):
-
             # TEXT
-            self.slide.placeholders[17 + idx].text = variant.num  # Variant number
+            try:
+                self.slide.placeholders[17 + idx].text = variant.num  # Variant number
+            except KeyError:
+                pass
 
             # IMAGES
             # 1st image is in all slide layouts
-            img1_path = os.path.join(variant.fullpath, 'PICTURES', images[0])
-            if os.path.isfile(img1_path):
-                self.slide.placeholders[11 + idx].insert_picture(img1_path)
-            else:
-                logger.error("Image: {} does not exist in \n         {}".format(
-                    os.path.basename(img1_path), os.path.dirname(img1_path)))
+            if self.layout_num in self.pres.one_image_slides or self.layout_num in self.pres.two_images_slides:
+                img1_path = os.path.join(variant.fullpath, 'PICTURES', images[0])
+                if os.path.isfile(img1_path):
+                    self.slide.placeholders[11 + idx].insert_picture(img1_path)
+                else:
+                    logger.error("Image: {} does not exist in \n         {}".format(
+                        os.path.basename(img1_path), os.path.dirname(img1_path)))
 
-            # 2nd additional image is only in layout 2, 4, 5
+            # 2nd additional image is only in layout 2, 4, 5, 8
             if self.layout_num in self.pres.two_images_slides:
                 img2_path = os.path.join(variant.fullpath, 'PICTURES', images[1])
 
@@ -432,6 +431,34 @@ class Slide():
                 else:
                     logger.error("Image: {} does not exist in \n         {}".format(
                         os.path.basename(img2_path), os.path.dirname(img2_path)))
+
+            # if self.layout_num == 1:
+            #     img_orig_path = os.path.join(variant.fullpath, 'PICTURES', images[0])
+            #     if os.path.isfile(img_orig_path):
+            #         self.slide.placeholders[10].insert_picture(img_orig_path)
+            #     else:
+            #         logger.error("Image: {} does not exist in \n         {}".format(
+            #             os.path.basename(img_orig_path), os.path.dirname(img_orig_path)))
+
+            # 1 image on whole slide in layout 7
+            if self.layout_num == 7:
+                img_orig_path = os.path.join(variant.fullpath, 'PICTURES', images[0])
+                if os.path.isfile(img_orig_path):
+                    self.slide.placeholders[11].insert_picture(img_orig_path, crop=False)
+                else:
+                    logger.error("Image: {} does not exist in \n         {}".format(
+                        os.path.basename(img_orig_path), os.path.dirname(img_orig_path)))
+
+            # 6 original images in layout 8
+            if self.layout_num == 8:
+                for NUM in range(0, 6):
+                    img_orig_path = os.path.join(variant.fullpath, 'PICTURES', images[NUM])
+                    if os.path.isfile(img_orig_path):
+                        self.slide.placeholders[11 + NUM].insert_picture(img_orig_path, crop=False)
+                    else:
+                        logger.error("Image: {} does not exist in \n         {}".format(
+                            os.path.basename(img_orig_path), os.path.dirname(img_orig_path)))
+
 
     def add_fringebar(self, fringebar: str):
         if self.layout_num in [2, 4] and fringebar is None:

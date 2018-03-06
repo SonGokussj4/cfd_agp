@@ -25,14 +25,13 @@ class CT_Picture(BaseShapeElement):
 
     @property
     def blip_rId(self):
-        """
-        Value of `p:blipFill/a:blip/@r:embed`. Raises |ValueError| if not
-        present.
+        """Value of `p:blipFill/a:blip/@r:embed`.
+        Returns |None| if not present.
         """
         blip = self.blipFill.blip
         if blip is not None and blip.rEmbed is not None:
             return blip.rEmbed
-        raise ValueError('no embedded image')
+        return None
 
     def crop_to_fit(self, image_size, view_size):
         """
@@ -41,6 +40,14 @@ class CT_Picture(BaseShapeElement):
         ratio is preserved.
         """
         self.blipFill.crop(self._fill_cropping(image_size, view_size))
+
+    def fit_no_crop(self, image_size, view_size):
+        """
+        Set cropping values in `p:blipFill/a:srcRect` such that an image of
+        *image_size* will shrink to exactly fit *view_size* when its aspect
+        ratio is preserved.
+        """
+        self.blipFill.crop(self._fit_resizing(image_size, view_size))
 
     def get_or_add_ln(self):
         """
@@ -77,6 +84,17 @@ class CT_Picture(BaseShapeElement):
         pic = parse_xml(xml)
         return pic
 
+    @classmethod
+    def new_video_pic(cls, shape_id, shape_name, video_rId, media_rId,
+                      poster_frame_rId, x, y, cx, cy):
+        """Return a new `p:pic` populated with the specified video."""
+        return parse_xml(
+            cls._pic_video_tmpl() % (
+                shape_id, shape_name, video_rId, media_rId, poster_frame_rId,
+                x, y, cx, cy
+            )
+        )
+
     @property
     def srcRect_b(self):
         """
@@ -105,6 +123,10 @@ class CT_Picture(BaseShapeElement):
         """
         return self._srcRect_x('t')
 
+    @staticmethod
+    def aspect_ratio(width, height):
+        return width / height
+
     def _fill_cropping(self, image_size, view_size):
         """
         Return a (left, top, right, bottom) 4-tuple containing the cropping
@@ -113,11 +135,9 @@ class CT_Picture(BaseShapeElement):
         as a fraction of 1.0, e.g. 0.425 represents 42.5%. *image_size* and
         *view_size* are each (width, height) pairs.
         """
-        def aspect_ratio(width, height):
-            return width / height
 
-        ar_view = aspect_ratio(*view_size)
-        ar_image = aspect_ratio(*image_size)
+        ar_view = self.aspect_ratio(*view_size)
+        ar_image = self.aspect_ratio(*image_size)
 
         if ar_view < ar_image:  # image too wide
             crop = (1.0 - (ar_view/ar_image)) / 2.0
@@ -125,6 +145,26 @@ class CT_Picture(BaseShapeElement):
         if ar_view > ar_image:  # image too tall
             crop = (1.0 - (ar_image/ar_view)) / 2.0
             return (0.0, crop, 0.0, crop)
+        return (0.0, 0.0, 0.0, 0.0)
+
+    def _fit_resizing(self, image_size, view_size):
+        """
+        Return a (left, top, right, bottom) 4-tuple containing the cropping
+        values required to display an image of *image_size* in *view_size*
+        when shrinking proportionately. Each value is a percentage expressed
+        as a fraction of 1.0, e.g. 0.425 represents 42.5%. *image_size* and
+        *view_size* are each (width, height) pairs.
+        """
+
+        ar_view = self.aspect_ratio(*view_size)
+        ar_image = self.aspect_ratio(*image_size)
+
+        if ar_view < ar_image:  # image too wide
+            crop = (ar_view/ar_image - 1.0) / 2.0
+            return (0.0, crop, 0.0, crop)
+        if ar_view > ar_image:  # image too tall
+            crop = (ar_image/ar_view - 1.0) / 2.0
+            return (crop, 0.0, crop, 0.0)
         return (0.0, 0.0, 0.0, 0.0)
 
     @classmethod
@@ -158,6 +198,45 @@ class CT_Picture(BaseShapeElement):
             '      <a:picLocks noChangeAspect="1"/>\n'
             '    </p:cNvPicPr>\n'
             '    <p:nvPr/>\n'
+            '  </p:nvPicPr>\n'
+            '  <p:blipFill>\n'
+            '    <a:blip r:embed="%%s"/>\n'
+            '    <a:stretch>\n'
+            '      <a:fillRect/>\n'
+            '    </a:stretch>\n'
+            '  </p:blipFill>\n'
+            '  <p:spPr>\n'
+            '    <a:xfrm>\n'
+            '      <a:off x="%%d" y="%%d"/>\n'
+            '      <a:ext cx="%%d" cy="%%d"/>\n'
+            '    </a:xfrm>\n'
+            '    <a:prstGeom prst="rect">\n'
+            '      <a:avLst/>\n'
+            '    </a:prstGeom>\n'
+            '  </p:spPr>\n'
+            '</p:pic>' % nsdecls('a', 'p', 'r')
+        )
+
+    @classmethod
+    def _pic_video_tmpl(cls):
+        return (
+            '<p:pic %s>\n'
+            '  <p:nvPicPr>\n'
+            '    <p:cNvPr id="%%d" name="%%s">\n'
+            '      <a:hlinkClick r:id="" action="ppaction://media"/>\n'
+            '    </p:cNvPr>\n'
+            '    <p:cNvPicPr>\n'
+            '      <a:picLocks noChangeAspect="1"/>\n'
+            '    </p:cNvPicPr>\n'
+            '    <p:nvPr>\n'
+            '      <a:videoFile r:link="%%s"/>\n'
+            '      <p:extLst>\n'
+            '        <p:ext uri="{DAA4B4D4-6D71-4841-9C94-3DE7FCFB9230}">\n'
+            '          <p14:media xmlns:p14="http://schemas.microsoft.com/of'
+            'fice/powerpoint/2010/main" r:embed="%%s"/>\n'
+            '        </p:ext>\n'
+            '      </p:extLst>\n'
+            '    </p:nvPr>\n'
             '  </p:nvPicPr>\n'
             '  <p:blipFill>\n'
             '    <a:blip r:embed="%%s"/>\n'
