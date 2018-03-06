@@ -14,7 +14,31 @@ def get_parser():
     Script has to be launched in the FOLDER with VARIANTS.
     Example:
         YETI:  /ST/SkodaAuto/AEROAKUSTIKA/PRJ/SK326-0/
-        RAPID: /ST/SkodaAuto/AEROAKUSTIKA/PRJ/SK370-3/STACIONARNI-VYPOCET/"""
+        RAPID: /ST/SkodaAuto/AEROAKUSTIKA/PRJ/SK370-3/STACIONARNI-VYPOCET/
+        
+    OR you can set global config file:
+
+    cfd_agp settings.cfg
+
+    See example:
+
+    # USER SETTINGS
+    # =============
+    [DEFAULT]
+        input_pptx = ../ANALYZA_SROVNANI/CFD_AGP/TEMPLATES/SABLONA-SK382-AEROAKUSTIKA.pptx
+        cfg_file = ../ANALYZA_SROVNANI/CFD_AGP/CONFIG/SK382.cfg
+        output_pptx = test.pptx
+    # =============
+    [var1]
+        label = SK370/3-S100
+        path = SK370-3-S100
+    [var2]
+        label = SK370/3-S200
+        path = SK370-3-S200
+    [var3]
+        label = SK370/3-S205
+        path = SK370-3-S205
+    # ============="""
 
     # VERSION
     parser.add_argument('--version',
@@ -25,7 +49,7 @@ def get_parser():
                         metavar='VARIANT',
                         type=str,
                         nargs='*',
-                        help="full FOLDER NAME of variant(s)")
+                        help="Full FOLDER NAME of variant(s) or main config file.")
 
     parser.add_argument('-o', '--output',
                         dest='output_pptx',

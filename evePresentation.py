@@ -70,9 +70,10 @@ class Presentation:
         self.variants = []
         self.conf = None
         self.one_image_slides = [2, 3]
-        self.two_images_slides = [4, 5, 6]
+        self.two_images_slides = [4, 5, 6, 7, 8, 9, 10, 11]
 
     def load_config(self, config_file):
+        logger.info("Loading slides configuration: {}".format(config_file))
         import configparser
         conf = configparser.ConfigParser()
         conf.read(config_file)
@@ -85,19 +86,31 @@ class Presentation:
         for var in variants:
             # Create a NamedTuple
             variant = namedtuple('variant', ('name', 'fullpath', 'num', 'exists'))
+            
+            # Check if we have simple path string or dictionary
+            if isinstance(var, str):
+                var_label = ""
+                var_path = var
+            else:
+                var_label = var.get("label", "")
+                var_path = var.get("path")
+
             # Fill the NamedTuple
-            variant.name = var.rstrip('/')
-            variant.fullpath = os.path.abspath(var)
+            variant.name = var_path.rstrip('/')
+            variant.fullpath = os.path.abspath(var_path)
             variant.folder = '/'.join(variant.fullpath.split('/')[0:-1])
-            variant.num = variant.name.split('-')[0]
-            variant.exists = os.path.isdir(os.path.abspath(var))
+            if not var_label:
+                var_label = variant.name.split('-')[0]
+            variant.num = var_label
+            variant.exists = os.path.isdir(os.path.abspath(var_path))
 
             # Check if variant (folder) exists, if true, add to list of Presentation.variants
             if variant.exists:
                 self.variants.append(variant)
+                logger.info("Added variant {0} in {1}".format(var_label, var_path))
             else:
                 logger.critical(
-                    "Project: {} was not found in: {} \nAre you in the RIGH folder??? "
+                    "Project: {} was not found in: {} \nAre you in the RIGHT folder??? "
                     "And please check entered variant names. ".format(variant.name, os.getcwd()))
                 sys.exit()
 
@@ -461,12 +474,12 @@ class Slide():
 
 
     def add_fringebar(self, fringebar: str):
-        if self.layout_num in [2, 4] and fringebar is None:
+        if self.layout_num in [2, 4, 10, 11] and fringebar is None:
             logger.critical("Slide [{}] with Layout[{}] has to have fringebar but none was specified "
                             "in config file. Aborting script...".format(self.slide_num, self.layout_num))
             sys.exit()
 
-        elif self.layout_num not in [2, 4] and fringebar is not None:
+        elif self.layout_num not in [2, 4, 10, 11] and fringebar is not None:
             logger.error("Slide [{}] with Layout[{}] should not have FRINGEBAR assigned. "
                          "Please see the config file and check this slide.".format(self.slide_num, self.layout_num))
             return None
