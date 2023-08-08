@@ -2,8 +2,8 @@
 
 Automatic Generated Presentation for CFD results using python-pptx
 
+### Examples
 
-### Examples:
 $ cfd_agp S100-BASIC-MIRROR-PR2/
     outputs OUTPUT.pptx in current directory using default template
 
@@ -14,8 +14,8 @@ $ cfd_agp S100-BASIC-MIRROR-PR2/ cfd_agp S200-BASIC-MIRROR-PR2/ -c ~/MyAGP/my_co
     outputs OUTPUT.pptx in current directory (comparing 2 variants) using user config file my_config.cfd
     placed in ~/MyAGP folder
 
-
 ### cfd_agp --help
+
 ```
     usage: cfd_agp [-h] [--version] [-o output_pptx] [-i input_pptx] [-c cfg_file]
                  [--show_placeholders]
@@ -43,4 +43,3 @@ $ cfd_agp S100-BASIC-MIRROR-PR2/ cfd_agp S200-BASIC-MIRROR-PR2/ -c ~/MyAGP/my_co
     --show_placeholders                   Generate PPTX that shows IDs and Names of placeholders
                                            (default: False)
 ```
-
